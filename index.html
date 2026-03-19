@@ -4,51 +4,110 @@
 <head>
 <meta charset="UTF-8">
 <title>لعبة جدول ضرب ٤</title>
+
 <style>
-    body {
-        background: #222;
-        color: white;
-        font-family: Arial;
-        text-align: center;
-        margin: 0;
-    }
-    #gameArea {
-        width: 100%;
-        height: 500px;
-        position: relative;
-        background: linear-gradient(#333, #111);
-        overflow: hidden;
-        border-bottom: 4px solid #555;
-    }
-    #player {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        width: 80px;
-    }
-    #monster {
-        position: absolute;
-        top: 200px;
-        right: -150px;
-        width: 120px;
-        transition: transform 0.1s;
-    }
-    .button {
-        display: block;
-        width: 80%;
-        margin: 10px auto;
-        padding: 15px;
-        background: #444;
-        color: white;
-        border-radius: 10px;
-        font-size: 22px;
-    }
-    #speedSelect button {
-        padding: 15px;
-        margin: 10px;
-        border-radius: 10px;
-        font-size: 20px;
-    }
+body {
+    margin: 0;
+    background: #222;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#gameArea {
+    width: 100%;
+    height: 420px;
+    position: relative;
+    background: linear-gradient(#333, #111);
+    display: none;
+    overflow: hidden;
+}
+
+/* اللاعب */
+#player {
+    width: 70px;
+    height: 70px;
+    background: #4da6ff;
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    border-radius: 10px;
+    border: 4px solid white;
+}
+
+#gun {
+    width: 45px;
+    height: 12px;
+    background: black;
+    position: absolute;
+    bottom: 40px;
+    left: 70px;
+    border-radius: 4px;
+}
+
+/* الوحش */
+.monster {
+    width: 120px;
+    height: 120px;
+    background: #ff4444;
+    border-radius: 50%;
+    position: absolute;
+    top: 150px;
+    right: -200px;
+    box-shadow: 0 0 20px rgba(255,0,0,0.5);
+}
+
+.monster::before,
+.monster::after {
+    content: "";
+    width: 30px;
+    height: 30px;
+    background: white;
+    position: absolute;
+    border-radius: 50%;
+    top: 35px;
+}
+
+.monster::before { left: 25px; }
+.monster::after { right: 25px; }
+
+.mouth {
+    width: 60px;
+    height: 25px;
+    background: black;
+    border-radius: 0 0 20px 20px;
+    position: absolute;
+    top: 70px;
+    left: 30px;
+}
+
+/* الوحش الكبير */
+.boss {
+    width: 170px !important;
+    height: 170px !important;
+    background: #aa0000 !important;
+}
+
+/* الأزرار */
+.btn {
+    width: 80%;
+    margin: 10px auto;
+    padding: 15px;
+    background: #444;
+    color: white;
+    border-radius: 10px;
+    font-size: 22px;
+}
+
+/* زر بدء اللعبة */
+#startBtn {
+    padding: 20px;
+    margin-top: 30px;
+    background: green;
+    color: white;
+    font-size: 26px;
+    border-radius: 15px;
+}
 </style>
 </head>
 
@@ -56,105 +115,109 @@
 
 <h2>⚔️ لعبة جدول ضرب العدد ٤</h2>
 
-<!-- اختيار السرعة -->
-<div id="speedSelect">
-    <h3>اختر سرعة الوحش:</h3>
-    <button onclick="startGame(1)">بطيء</button>
-    <button onclick="startGame(2)">متوسط</button>
-    <button onclick="startGame(3)">سريع</button>
+<button id="startBtn" onclick="startGame()">ابدأ اللعبة ▶️</button>
+
+<div id="gameArea">
+    <div id="player">
+        <div id="gun"></div>
+    </div>
+
+    <div id="monster" class="monster">
+        <div class="mouth"></div>
+    </div>
 </div>
 
-<!-- منطقة اللعب -->
-<div id="gameArea" style="display:none;">
-    https://i.imgur.com/2y5cY3h.png
-    <img id="monster" src="">
-</div>
-
-<h3 id="levelText"></h3>
+<h2 id="levelText"></h2>
 <h2 id="question"></h2>
-
 <div id="answers"></div>
 
 <!-- أصوات -->
-https://actions.google.com/sounds/v1/impacts/metal_impact.ogg</audio>
-https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg</audio>
-https://actions.google.com/sounds/v1/cartoon/descending_whistle_ending.ogg</audio>
+<audio id="shootSound">
+    https://actions.google.com/sounds/v1/impacts/metal_impact.ogg
+</audio>
+
+<audio id="hitSound">
+    https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg
+</audio>
+
+<audio id="loseSound">
+    https://actions.google.com/sounds/v1/cartoon/descending_whistle_ending.ogg
+</audio>
 
 <script>
-let monsterSpeed = 2;
 let level = 1;
-let correctAnswer = 0;
 let monsterHP = 1;
-let monsterPosition = 1000;
-let gameLoop;
+let correctAnswer = 0;
+let monsterPos = 1000;
+let speed = 2;
+let loop;
 
-function startGame(speed){
-    monsterSpeed = speed;
-    document.getElementById("speedSelect").style.display = "none";
+function startGame(){
+    document.getElementById("startBtn").style.display = "none";
     document.getElementById("gameArea").style.display = "block";
+
+    level = 1;
     nextLevel();
 }
 
-function nextLevel() {
-    document.getElementById("levelText").innerText = "المرحلة: " + level;
-    spawnMonster();
+function nextLevel(){
+    document.getElementById("levelText").innerText = "المرحلة: " + toArabic(level);
+
+    // إعداد الوحش
+    let m = document.getElementById("monster");
+    m.className = "monster";
+    monsterHP = 1;
+
+    if(level % 3 === 0){
+        m.classList.add("boss");
+        monsterHP = 3;
+    }
+
+    monsterPos = 1000;
+    m.style.right = monsterPos + "px";
+
+    clearInterval(loop);
+    loop = setInterval(moveMonster, 30);
+
     generateQuestion();
 }
 
-function spawnMonster() {
-    const monster = document.getElementById("monster");
-    
-    if(level % 3 === 0){
-        monster.src = "https://i.imgur.com/tVmtF6n.png"; // وحش كبير
-        monsterHP = 3;
-    } else {
-        monster.src = "https://i.imgur.com/YWzZy0T.png"; // وحش عادي
-        monsterHP = 1;
-    }
+function moveMonster(){
+    monsterPos -= speed;
+    let m = document.getElementById("monster");
+    m.style.right = monsterPos + "px";
 
-    monsterPosition = 1000;
-    monster.style.right = monsterPosition + "px";
-
-    clearInterval(gameLoop);
-    gameLoop = setInterval(moveMonster, 30);
-}
-
-function moveMonster() {
-    monsterPosition -= monsterSpeed;
-    const monster = document.getElementById("monster");
-    monster.style.right = monsterPosition + "px";
-
-    if(monsterPosition < 50){
-        clearInterval(gameLoop);
+    if(monsterPos < 50){
+        clearInterval(loop);
         document.getElementById("loseSound").play();
-        document.getElementById("question").innerText = "انتهت اللعبة!";
+        document.getElementById("question").innerText = "💀 انتهت اللعبة!";
         document.getElementById("answers").innerHTML = "";
     }
 }
 
 function generateQuestion(){
-    let x = Math.floor(Math.random() * 10) + 1;
-    correctAnswer = 4 * x;
+    let x = Math.floor(Math.random()*10)+1;
+    correctAnswer = 4*x;
 
     document.getElementById("question").innerText = "٤ × " + toArabic(x);
 
-    let answersHTML = "";
-    let correctIndex = Math.floor(Math.random() * 3);
+    let html = "";
+    let correctIndex = Math.floor(Math.random()*3);
 
     for(let i=0;i<3;i++){
         if(i === correctIndex){
-            answersHTML += `<button class="button" onclick="checkAnswer(${correctAnswer})">${toArabic(correctAnswer)}</button>`;
+            html += `<button class="btn" onclick="check(${correctAnswer})">${toArabic(correctAnswer)}</button>`;
         } else {
-            let wrong = correctAnswer + (Math.floor(Math.random()*5)+1) * (Math.random()>0.5?1:-1);
+            let wrong = correctAnswer + (Math.floor(Math.random()*5)+1)*(Math.random()>0.5?1:-1);
             if(wrong < 1) wrong = 1;
-            answersHTML += `<button class="button" onclick="checkAnswer(${wrong})">${toArabic(wrong)}</button>`;
+            html += `<button class="btn" onclick="check(${wrong})">${toArabic(wrong)}</button>`;
         }
     }
 
-    document.getElementById("answers").innerHTML = answersHTML;
+    document.getElementById("answers").innerHTML = html;
 }
 
-function checkAnswer(ans){
+function check(ans){
     if(ans === correctAnswer){
         document.getElementById("shootSound").play();
         hitMonster();
@@ -164,24 +227,23 @@ function checkAnswer(ans){
 
 function hitMonster(){
     monsterHP--;
-
     document.getElementById("hitSound").play();
 
     if(monsterHP <= 0){
-        clearInterval(gameLoop);
+        clearInterval(loop);
         level++;
-        setTimeout(nextLevel, 500);
+        setTimeout(nextLevel, 400);
     }
 }
 
 function toArabic(n){
     return n.toString()
-    .replace(/0/g,"٠").replace(/1/g,"١").replace(/2/g,"٢")
-    .replace(/3/g,"٣").replace(/4/g,"٤").replace(/5/g,"٥")
-    .replace(/6/g,"٦").replace(/7/g,"٧").replace(/8/g,"٨").replace(/9/g,"٩");
+        .replace(/0/g,"٠").replace(/1/g,"١").replace(/2/g,"٢")
+        .replace(/3/g,"٣").replace(/4/g,"٤").replace(/5/g,"٥")
+        .replace(/6/g,"٦").replace(/7/g,"٧").replace(/8/g,"٨")
+        .replace(/9/g,"٩");
 }
 </script>
 
 </body>
 </html>
- 
