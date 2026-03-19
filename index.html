@@ -1,175 +1,187 @@
+ 
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لعبة جدول ضرب ٤</title>
+<style>
+    body {
+        background: #222;
+        color: white;
+        font-family: Arial;
+        text-align: center;
+        margin: 0;
+    }
+    #gameArea {
+        width: 100%;
+        height: 500px;
+        position: relative;
+        background: linear-gradient(#333, #111);
+        overflow: hidden;
+        border-bottom: 4px solid #555;
+    }
+    #player {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        width: 80px;
+    }
+    #monster {
+        position: absolute;
+        top: 200px;
+        right: -150px;
+        width: 120px;
+        transition: transform 0.1s;
+    }
+    .button {
+        display: block;
+        width: 80%;
+        margin: 10px auto;
+        padding: 15px;
+        background: #444;
+        color: white;
+        border-radius: 10px;
+        font-size: 22px;
+    }
+    #speedSelect button {
+        padding: 15px;
+        margin: 10px;
+        border-radius: 10px;
+        font-size: 20px;
+    }
+</style>
+</head>
 
-using UnityEngine;
-using UnityEngine.UI;
+<body>
 
-// ===================== GAME CONTROLLER ======================
-public class GameController : MonoBehaviour
-{
-    [Header("UI")]
-    public Text questionText;
-    public Button[] answerButtons;
-    public Text levelText;
+<h2>⚔️ لعبة جدول ضرب العدد ٤</h2>
 
-    [Header("Player")]
-    public AudioSource shootSound;
-    public GameObject bulletPrefab;
-    public Transform gunPoint;
+<!-- اختيار السرعة -->
+<div id="speedSelect">
+    <h3>اختر سرعة الوحش:</h3>
+    <button onclick="startGame(1)">بطيء</button>
+    <button onclick="startGame(2)">متوسط</button>
+    <button onclick="startGame(3)">سريع</button>
+</div>
 
-    [Header("Monsters")]
-    public GameObject monsterNormalPrefab;
-    public GameObject monsterBossPrefab;
-    public Transform monsterSpawnPoint;
-    public Transform playerPos;
+<!-- منطقة اللعب -->
+<div id="gameArea" style="display:none;">
+    https://i.imgur.com/2y5cY3h.png
+    <img id="monster" src="">
+</div>
 
-    private GameObject currentMonster;
-    private int monsterHealth;
-    private int level = 1;
-    private int correctAnswer;
+<h3 id="levelText"></h3>
+<h2 id="question"></h2>
 
-    public static float monsterSpeed = 1.2f;  // سرعة الوحش المختارة من اللاعب
+<div id="answers"></div>
 
-    void Start()
-    {
-        StartLevel();
+<!-- أصوات -->
+https://actions.google.com/sounds/v1/impacts/metal_impact.ogg</audio>
+https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg</audio>
+https://actions.google.com/sounds/v1/cartoon/descending_whistle_ending.ogg</audio>
+
+<script>
+let monsterSpeed = 2;
+let level = 1;
+let correctAnswer = 0;
+let monsterHP = 1;
+let monsterPosition = 1000;
+let gameLoop;
+
+function startGame(speed){
+    monsterSpeed = speed;
+    document.getElementById("speedSelect").style.display = "none";
+    document.getElementById("gameArea").style.display = "block";
+    nextLevel();
+}
+
+function nextLevel() {
+    document.getElementById("levelText").innerText = "المرحلة: " + level;
+    spawnMonster();
+    generateQuestion();
+}
+
+function spawnMonster() {
+    const monster = document.getElementById("monster");
+    
+    if(level % 3 === 0){
+        monster.src = "https://i.imgur.com/tVmtF6n.png"; // وحش كبير
+        monsterHP = 3;
+    } else {
+        monster.src = "https://i.imgur.com/YWzZy0T.png"; // وحش عادي
+        monsterHP = 1;
     }
 
-    void StartLevel()
-    {
-        levelText.text = "المرحلة: " + ArabicNumber(level);
-        SpawnMonster();
-        GenerateQuestion();
-    }
+    monsterPosition = 1000;
+    monster.style.right = monsterPosition + "px";
 
-    void SpawnMonster()
-    {
-        if (level % 3 == 0)
-        {
-            currentMonster = Instantiate(monsterBossPrefab, monsterSpawnPoint.position, Quaternion.identity);
-            monsterHealth = 3;
-        }
-        else
-        {
-            currentMonster = Instantiate(monsterNormalPrefab, monsterSpawnPoint.position, Quaternion.identity);
-            monsterHealth = 1;
-        }
+    clearInterval(gameLoop);
+    gameLoop = setInterval(moveMonster, 30);
+}
 
-        currentMonster.AddComponent<MonsterMover>().Init(playerPos, monsterSpeed, this);
-    }
+function moveMonster() {
+    monsterPosition -= monsterSpeed;
+    const monster = document.getElementById("monster");
+    monster.style.right = monsterPosition + "px";
 
-    public void MonsterReachedPlayer()
-    {
-        Time.timeScale = 0;
-        questionText.text = "انتهت اللعبة!";
-    }
-
-    public void HitMonster()
-    {
-        monsterHealth--;
-
-        if (monsterHealth <= 0)
-        {
-            Destroy(currentMonster);
-            level++;
-            StartLevel();
-        }
-    }
-
-    void GenerateQuestion()
-    {
-        int x = Random.Range(1, 11);
-        correctAnswer = 4 * x;
-
-        questionText.text = "٤ × " + ArabicNumber(x);
-
-        int correctIndex = Random.Range(0, 3);
-        answerButtons[correctIndex].GetComponentInChildren<Text>().text = ArabicNumber(correctAnswer);
-
-        for (int i = 0; i < 3; i++)
-        {
-            if (i == correctIndex) continue;
-
-            int wrong = correctAnswer + Random.Range(1, 5) * (Random.value > 0.5f ? 1 : -1);
-            if (wrong <= 0) wrong = 1;
-
-            answerButtons[i].GetComponentInChildren<Text>().text = ArabicNumber(wrong);
-        }
-
-        foreach (Button btn in answerButtons)
-        {
-            btn.onClick.RemoveAllListeners();
-            btn.onClick.AddListener(() => CheckAnswer(btn));
-        }
-    }
-
-    void CheckAnswer(Button btn)
-    {
-        int chosen = ParseArabic(btn.GetComponentInChildren<Text>().text);
-
-        if (chosen == correctAnswer)
-        {
-            shootSound.Play();
-            Instantiate(bulletPrefab, gunPoint.position, Quaternion.identity);
-            HitMonster();
-        }
-
-        GenerateQuestion();
-    }
-
-    string ArabicNumber(int n)
-    {
-        return n.ToString()
-            .Replace('0', '٠')
-            .Replace('1', '١')
-            .Replace('2', '٢')
-            .Replace('3', '٣')
-            .Replace('4', '٤')
-            .Replace('5', '٥')
-            .Replace('6', '٦')
-            .Replace('7', '٧')
-            .Replace('8', '٨')
-            .Replace('9', '٩');
-    }
-
-    int ParseArabic(string s)
-    {
-        return int.Parse(
-            s.Replace("٠", "0")
-             .Replace("١", "1")
-             .Replace("٢", "2")
-             .Replace("٣", "3")
-             .Replace("٤", "4")
-             .Replace("٥", "5")
-             .Replace("٦", "6")
-             .Replace("٧", "7")
-             .Replace("٨", "8")
-             .Replace("٩", "9")
-        );
+    if(monsterPosition < 50){
+        clearInterval(gameLoop);
+        document.getElementById("loseSound").play();
+        document.getElementById("question").innerText = "انتهت اللعبة!";
+        document.getElementById("answers").innerHTML = "";
     }
 }
 
+function generateQuestion(){
+    let x = Math.floor(Math.random() * 10) + 1;
+    correctAnswer = 4 * x;
 
-// ===================== حركة الوحش ======================
-public class MonsterMover : MonoBehaviour
-{
-    private Transform player;
-    private float speed;
-    private GameController controller;
+    document.getElementById("question").innerText = "٤ × " + toArabic(x);
 
-    public void Init(Transform p, float s, GameController gc)
-    {
-        player = p;
-        speed = s;
-        controller = gc;
-    }
+    let answersHTML = "";
+    let correctIndex = Math.floor(Math.random() * 3);
 
-    void Update()
-    {
-        transform.position =
-            Vector3.MoveTowards(transform.position, player.position, speed * Time.deltaTime);
-
-        if (Vector3.Distance(transform.position, player.position) < 0.1f)
-        {
-            controller.MonsterReachedPlayer();
+    for(let i=0;i<3;i++){
+        if(i === correctIndex){
+            answersHTML += `<button class="button" onclick="checkAnswer(${correctAnswer})">${toArabic(correctAnswer)}</button>`;
+        } else {
+            let wrong = correctAnswer + (Math.floor(Math.random()*5)+1) * (Math.random()>0.5?1:-1);
+            if(wrong < 1) wrong = 1;
+            answersHTML += `<button class="button" onclick="checkAnswer(${wrong})">${toArabic(wrong)}</button>`;
         }
     }
+
+    document.getElementById("answers").innerHTML = answersHTML;
 }
+
+function checkAnswer(ans){
+    if(ans === correctAnswer){
+        document.getElementById("shootSound").play();
+        hitMonster();
+    }
+    generateQuestion();
+}
+
+function hitMonster(){
+    monsterHP--;
+
+    document.getElementById("hitSound").play();
+
+    if(monsterHP <= 0){
+        clearInterval(gameLoop);
+        level++;
+        setTimeout(nextLevel, 500);
+    }
+}
+
+function toArabic(n){
+    return n.toString()
+    .replace(/0/g,"٠").replace(/1/g,"١").replace(/2/g,"٢")
+    .replace(/3/g,"٣").replace(/4/g,"٤").replace(/5/g,"٥")
+    .replace(/6/g,"٦").replace(/7/g,"٧").replace(/8/g,"٨").replace(/9/g,"٩");
+}
+</script>
+
+</body>
+</html>
+ 
