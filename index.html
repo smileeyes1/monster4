@@ -1,6 +1,8 @@
+
 using UnityEngine;
 using UnityEngine.UI;
 
+// ===================== GAME CONTROLLER ======================
 public class GameController : MonoBehaviour
 {
     [Header("UI")]
@@ -13,7 +15,7 @@ public class GameController : MonoBehaviour
     public GameObject bulletPrefab;
     public Transform gunPoint;
 
-    [Header("Monster")]
+    [Header("Monsters")]
     public GameObject monsterNormalPrefab;
     public GameObject monsterBossPrefab;
     public Transform monsterSpawnPoint;
@@ -24,8 +26,7 @@ public class GameController : MonoBehaviour
     private int level = 1;
     private int correctAnswer;
 
-    // سرعة الوحش التي يحددها اللاعب من القائمة الأولى
-    public static float monsterSpeed = 1.2f;
+    public static float monsterSpeed = 1.2f;  // سرعة الوحش المختارة من اللاعب
 
     void Start()
     {
@@ -35,7 +36,6 @@ public class GameController : MonoBehaviour
     void StartLevel()
     {
         levelText.text = "المرحلة: " + ArabicNumber(level);
-
         SpawnMonster();
         GenerateQuestion();
     }
@@ -44,15 +44,13 @@ public class GameController : MonoBehaviour
     {
         if (level % 3 == 0)
         {
-            // وحش كبير
             currentMonster = Instantiate(monsterBossPrefab, monsterSpawnPoint.position, Quaternion.identity);
-            monsterHealth = 3;  // يحتاج ٣ رصاصات
+            monsterHealth = 3;
         }
         else
         {
-            // وحش عادي
             currentMonster = Instantiate(monsterNormalPrefab, monsterSpawnPoint.position, Quaternion.identity);
-            monsterHealth = 1;  // طلقة واحدة
+            monsterHealth = 1;
         }
 
         currentMonster.AddComponent<MonsterMover>().Init(playerPos, monsterSpeed, this);
@@ -109,10 +107,8 @@ public class GameController : MonoBehaviour
 
         if (chosen == correctAnswer)
         {
-            // إطلاق النار
             shootSound.Play();
             Instantiate(bulletPrefab, gunPoint.position, Quaternion.identity);
-
             HitMonster();
         }
 
@@ -122,16 +118,16 @@ public class GameController : MonoBehaviour
     string ArabicNumber(int n)
     {
         return n.ToString()
-                .Replace('0', "٠")
-                .Replace('1', "١")
-                .Replace('2', "٢")
-                .Replace('3', "٣")
-                .Replace('4', "٤")
-                .Replace('5', "٥")
-                .Replace('6', "٦")
-                .Replace('7', "٧")
-                .Replace('8', "٨")
-                .Replace('9', "٩");
+            .Replace('0', '٠')
+            .Replace('1', '١')
+            .Replace('2', '٢')
+            .Replace('3', '٣')
+            .Replace('4', '٤')
+            .Replace('5', '٥')
+            .Replace('6', '٦')
+            .Replace('7', '٧')
+            .Replace('8', '٨')
+            .Replace('9', '٩');
     }
 
     int ParseArabic(string s)
@@ -152,7 +148,7 @@ public class GameController : MonoBehaviour
 }
 
 
-// =================== حركة الوحش ===================
+// ===================== حركة الوحش ======================
 public class MonsterMover : MonoBehaviour
 {
     private Transform player;
@@ -177,4 +173,3 @@ public class MonsterMover : MonoBehaviour
         }
     }
 }
- 
